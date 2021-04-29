@@ -134,12 +134,7 @@ logistic_roc <- roc(oral$follow,pre_logistic)
 plot(logistic_roc, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='逻辑回归ROC曲线')
 ```
 
-
-
-```{r}
-sg <- filter(Health_Literacy_Transformed_Data,Site=='Salivary Gland' )
-ggplot(data=sg)+geom_histogram(mapping=aes(x=`Surgery Performed?`,fill=`Surgery Decision`),stat='count')
-```
+# Salivary Gland
 
 ```{r}
 sali <- Health_Literacy_Transformed_Data %>% filter(Site == "Salivary Gland")
@@ -164,6 +159,18 @@ for(i in 1:nrow(sali)){
 }
 
 ```
+
+## Plot
+
+```{r}
+ggplot(data=sali)+geom_histogram(mapping=aes(x=`Race`,fill=`follow`),stat='count',position = 'dodge')
+ggplot(data=sali)+geom_bar(mapping=aes(x=`Insurance`,fill=`follow`),stat='count',position = 'dodge')
+```
+
+
+
+
+
 ```{r}
 sali$follow <- as.factor(sali$follow)
 ggplot(sali)+geom_histogram(aes(x=follow),stat="count")
@@ -224,6 +231,7 @@ length(testdata1$follow)-sum(testdata1$follow==1)
 write.csv(traindata1,"traindata1.csv",row.names = F)
 write.csv(testdata1,"testdata1.csv",row.names = F)
 ```
+
 
 ## SVM
 
