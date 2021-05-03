@@ -1,0 +1,175 @@
+---
+title: "SEER project"
+author: "Xiaojia Liu"
+date: "2021/4/10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("readxl")
+library("dplyr")
+library("caret")
+library("purrr")
+library("randomForest")
+library("e1071")
+library("pROC")
+```
+
+##Data Processing
+```{r}
+dt_sal <- read.csv("Salivary.csv")
+head(dt_sal)
+dt_sal$follow <- as.factor(dt_sal$follow)
+summary(dt_sal$follow)
+#DataExplorer::create_report(dt_sal)
+```
+
+The key of this method is to build two models, one uses the sex and race, another not. Then compare the two models. If one is significantly different than the other, then the sex and race factors do matter.
+
+```{r}
+getColUni <- function(x){
+  length(unique(x))
+} 
+
+getSample <- function(data){
+  repeat{
+    sample <-createDataPartition(y=data$follow,p=0.7,list=FALSE)
+    train <- data[sample, ] 
+    # length(train$follow)-sum(train$follow==1)
+    # test <- data[-sample, ]
+    # length(test$follow)-sum(test$follow==1)
+    dataCat <- select_if(data,negate(is.numeric))
+    trainCat <- select_if(train,negate(is.numeric))
+    if(all(rapply(dataCat, getColUni)[-c(1,ncol(dataCat))]==rapply(trainCat, getColUni)[-c(1,ncol(trainCat))])) break
+  }
+  return(sample)
+}
+```
+
+```{r}
+sal.sample <- getSample(dt_sal)
+summary(sal.sample)
+```
+
+
+```{r}
+sali <- dt_sal
+set.seed(1234)
+sali <- sali[,-c(1,2,15,16,20:25)]
+```
+
+```{r}
+train <-createDataPartition(y=sali$follow,p=0.7,list=FALSE)
+traindata <- sali[train, ] 
+length(traindata$follow)-sum(traindata$follow==1)
+testdata <- sali[-train, ]
+length(testdata$follow)-sum(testdata$follow==1)
+head(traindata)
+```
+
+```{r}
+temp_names <- c('Sex', 'Race', 'Insurance', 'SEER.Registry', 'Subsite', 'AJCC.7.Stage', 'Chemotherapy')
+testdata[,temp_names] <- lapply(testdata[,temp_names] , factor)
+traindata[,temp_names] <- lapply(traindata[,temp_names] , factor)
+str(testdata)
+str(traindata)
+```
+
+```{r}
+summary(traindata$follow)
+summary(testdata$follow)
+```
+
+Removed from data: 
+ - testdata: Not performed, patient died prior to recommended surgery (2)
+ - traindata: Sequence unknown, but both were given (1)
+```{r}
+#testdata <- subset(testdata, testdata$Surgery.Decision != "Not performed, patient died prior to recommended surgery")
+#traindata <- subset(traindata, traindata$Radiation != "Sequence unknown, but both were given")
+#head(testdata)
+#head(traindata)
+
+```
+
+```{r}
+#temp_names <- c('Sex', 'Year.of.Diagnosis', 'Age.at.Diagnosis', 'Race', 'Insurance', 'SEER.Registry', 'X...9th.Grade.Education', 'X...High.School.Education', 'X...Bachelors.Education', 'X..Persons.Below.Poverty', 'X..Unemployed.ACS.2013.2017', 'Median.Household.Income','X..Language.isolation.ACS.2013.2017..households.', 'Site', 'Subsite', 'AJCC.7.Stage', 'Size', 'Lymph.Nodes', 'Mets','Cause.of.Death', 'Surgery.Performed.', 'Surgery.Decision', 'Radiation', 'Chemotherapy','follow')
+```
+
+
+```{r}
+levels(testdata$Sex) <- levels(traindata$Sex)
+levels(testdata$Year.of.Diagnosis) <- levels(traindata$Year.of.Diagnosis)
+levels(testdata$Age.at.Diagnosis) <- levels(traindata$Age.at.Diagnosis)
+levels(testdata$Race) <- levels(traindata$Race)
+levels(testdata$Insurance) <- levels(traindata$Insurance)
+levels(testdata$SEER.Registry) <- levels(traindata$SEER.Registry)
+levels(testdata$X...9th.Grade.Education) <- levels(traindata$X...9th.Grade.Education)
+levels(testdata$X...High.School.Education) <- levels(traindata$X...High.School.Education)
+levels(testdata$X...Bachelors.Education) <- levels(traindata$X...Bachelors.Education)
+levels(testdata$X..Persons.Below.Poverty) <- levels(traindata$X..Persons.Below.Poverty)
+levels(testdata$X..Unemployed.ACS.2013.2017) <- levels(traindata$X..Unemployed.ACS.2013.2017)
+levels(testdata$Median.Household.Income) <- levels(traindata$Median.Household.Income)
+levels(testdata$Subsite) <- levels(traindata$Subsite)
+levels(testdata$AJCC.7.Stage) <- levels(traindata$AJCC.7.Stage)
+levels(testdata$Size) <- levels(traindata$Size)
+levels(testdata$Chemotherapy) <- levels(traindata$Chemotherapy)
+levels(testdata$follow) <- levels(traindata$follow)
+```
+
+
+```{r}
+head(testdata)
+```
+
+
+##Modeling
+###RDF
+```{r}
+p = dim(dt_sal)[2] - 1
+p.sqrt = sqrt(p)
+
+forest.sqrt = randomForest(follow~., data=traindata, mtry=p.sqrt, ntree=100)
+
+
+pred_forest.sqrt = predict(forest.sqrt, testdata, type = "class" )
+confusionMatrix(pred_forest.sqrt, as.factor(testdata$follow))
+```
+```{r}
+importance(forest.sqrt)
+```
+####AUC
+```{r}
+roc.test <- roc(testdata$outcome, pred_forest.sqrt$follow[,2])
+auc(roc.test)
+```
+
+
+###SVM
+```{r}
+svm.ploy <- svm(follow~., kernel = "polynomial", data = traindata)
+summary(svm.ploy)
+svm.lm <- svm(follow~., kernel = "linear", data = traindata)
+summary(svm.lm)
+svm.rad <- svm(follow~., kernel = "radial", data = traindata)
+summary(svm.rad)
+```
+
+```{r}
+pred_svm.ploy = predict(svm.ploy, testdata)
+table(as.factor(testdata$follow), pred_svm.ploy)
+#Accuracy ~ 
+
+pred_svm.lm = predict(svm.lm, testdata)
+table(as.factor(testdata$follow), pred_svm.lm)
+#Accuracy  ~
+
+pred_svm.rad= predict(svm.rad, testdata)
+table(as.factor(testdata$follow), pred_svm.rad)
+#Accuracy ~
+```
+####AUC
+```{r}
+
+```
+
