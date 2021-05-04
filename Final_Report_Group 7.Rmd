@@ -23,13 +23,18 @@ guide <- read_excel("NCCN Guidelines.xlsx")
 
 # Introduction
 
-For doctors we met with are interested in bias contained in SEER data, so after have some initial exploration of SEER data, we decided to see whether there is bias between doctor's decision and the treatment guideline. The treatment guideline is based on TNM cancer stage, we only have information about AJCC cancer stage, which means we cannot match all cancer type with their guidelines. Therefore, we only chose  cancer on Salivary Grand to do further exploration since its treatment matches well with the data.
+For doctors we met with are interested in bias contained in SEER data, so after have some initial exploration of SEER data, we decided to see whether there is bias between doctor's decision and the treatment guideline. The treatment guideline is based on TNM cancer stage, we only have information about AJCC cancer stage, which means we cannot match all cancer type with their guidelines. Therefore, we only chose cancer on Salivary Grand to do further exploration since its treatment matches well with the data.
 
 # Data Processing
 
-In the data processing step, we first select all the Salivary Grand cancer. Since we cannot find treatment with stage 'IVC' and 'IVNOS', and they are minor so we remove them as well. Based on the `NCCN Guidelines`, we found that only stage 'IVB' has different treatment 1 for others are recommended to have surgery while it not. Depending on that, we create a column with information whether they followed the treatment guideline or not, and '0' means they did not followed, '1' means they followed. Meanwhile, we replace all the blank space and symbols in column names for convenience.
+In the data processing step, we first selected all the Salivary Grand cancer. In the 'NCCN Guidelines' file, there is no treatment guideline information for stage 'IVC' and 'IVNOS' of cancer Salivary Grand. We removed observations of 'IVNOS' stage since there are only 6 observations and this amount is trivial compared with the whole dataset. As for the 'IVC' stage, according to the information provided in 'head-and-neck.pdf' page 87, there is no preferred treatment, and the treatment should be individualized based on patient characteristics. Thus, we removed all observations of 'IVC' stage because we could not decide whether the given therapy follows the guideline or not. Other than these two stages, based on the `NCCN Guidelines`, we found that only stage 'IVB' has different preferred number one therapy from others, its therapy1 is Radiation while other stages are recommended to have Surgery. Depending on this information, we create a binary column to indicate whether each individual is given treatment following the guideline or not, in this case '0' means the treatment does not follow the guideline, '1' means the treatment follows the guideline. Meanwhile, we replace all the blank space and symbols in column names for convenience.
 
-Also we created some new variables:
+Also we created some new variables based on the EDA:
+1. Insurance2: This is a categorical variable with levels 0,1,2. We find that people in the "Insured" class have a lowest rate of being given treatment not following the guideline, while people in the "Uninsured" class have the highest rate of that. "1" indicates the "Insured" class, "2" indicates the "Uninsured" class, and "0" indicates all others.
+
+2. Subsites2: This is a categorical variable with two levels 0 and 1. We find that in the subsite class "C08.1-Sublingual gland", all the observations are given treatment following the guideline. "1" indicates an individual is in this class, "0" indicates all others. 
+
+The specific plots and other results from EDA will be shown in the next part.
 
 Because we decided to use machine learning, we also separate the data into training data and test data, and guarantee that the proportion of 0 and 1 response in both two samples are similar.
 
