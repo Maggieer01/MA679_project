@@ -73,6 +73,7 @@ ins2 <- sali %>% filter(Insurance == "Uninsured")
 
 sali$Subsite2 <- ifelse(sali$Subsite == "C08.1-Sublingual gland", 1, 0)
 ```
+
 ```{r}
 names(sali) <- gsub("\\s+", "_", names(sali))
 names(sali) <- gsub("%_<", "Pct_Less_", names(sali))
@@ -118,8 +119,35 @@ test <- trainsali[-sample,]
 ```
 
 # EDA
+This is a imbalanced dataset in terms of Race, Gender, SEER_Registry, and Insurance type. (plots)
+
+Besides this , there are only 197 observations in class 0 while 2108 observations in class 1, so we also have extremely imbalanced classes in our outcome. (plots)
+
 
 # Modeling
+We tried the logistic regression and multilevel logistic regression as our baselines, and then we moved on to the classification tree, svm, and random forest.
 
 ## Random Forest
 
+We first fitted a normal randomForest model.
+
+
+Next, to deal with the imbalanced classes problem, we tried the stratified sampling method in randomForest with different ratios of class0 vs. class1, such as 1:100, 1:10, and 1:1, and it turns out that the model performance is the best with ratio 1:1.
+
+```{r}
+#tune: mtry, ntree, sampsize
+
+rf = randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, ntree=1000)
+pred_forest = predict(rf, test, type = "class")
+confusionMatrix(pred_forest, test$follow)
+roc.curve(test$follow, factor(pred_forest))
+
+
+
+# random forest with stratified sampling
+rf2 = randomForest(follow ~ Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes + Subsite2 + AJCC_7_Stage + Sex + Race,
+                   data = train, ntree=1000, sampsize=c(85,85),strata=train$follow)
+pred_forest2 = predict(rf2, test, type = "class")
+confusionMatrix(pred_forest2, test$follow)
+roc.curve(test$follow, factor(pred_forest2))
+```
