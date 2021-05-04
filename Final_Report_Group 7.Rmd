@@ -62,7 +62,16 @@ for(i in 1:nrow(sali)){
 
 
 
-sali$Race2 <- ifelse(sali$Race == "White", "White", "Other")
+sali$Insurance2 <- ifelse(sali$Insurance == "Insured", 1, 0)
+for(i in 1:nrow(sali)){
+  if(sali$Insurance[i] == "Uninsured"){
+    sali$Insurance2[i] <- 2
+  }
+}
+
+ins2 <- sali %>% filter(Insurance == "Uninsured")
+
+sali$Subsite2 <- ifelse(sali$Subsite == "C08.1-Sublingual gland", 1, 0)
 ```
 ```{r}
 names(sali) <- gsub("\\s+", "_", names(sali))
@@ -113,3 +122,4 @@ test <- trainsali[-sample,]
 # Modeling
 
 ## Random Forest
+
