@@ -3,6 +3,7 @@ title: "MA 679 Final Report"
 author: "Group 7"
 date: "2021/5/4"
 output: pdf_document
+urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
@@ -290,7 +291,7 @@ Because we do not have information like TNM stage, so we cannot match treatment 
 We do our best to fit a model performing well on both class 1 and class 0, as you can see the model is not perfect due to the limitation of data imbalance. This is a question that often can be seen in machine learning since in the real world those imbalance things always happen. Our model here is only a reference to give a sense of what and how this bias will happen, and due to the accuracy of the model, we cannot assert that it must or it must not have bias.
 
 # Appendix
-We found some methods on [this website](https://machinelearningmastery.com/bagging-and-random-forest-for-imbalanced-classification/), and the Jupyter notebook .ipynb file is uploaded in the Appendix folder on our github. The performance of these models are close to our random forest model. 
+We found some methods on [this website](https://machinelearningmastery.com/bagging-and-random-forest-for-imbalanced-classification/), and the Jupyter notebook .ipynb file is uploaded in the Appendix folder on [our Github](https://github.com/Maggieer01/MA679_project/tree/main/Appendix). The performance of these models is close to our random forest model. 
 
 # Citation
 ```{r}
