@@ -7,14 +7,8 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
-library("readxl")
-library("dplyr")
-library("caret")
-library("purrr")
-library("randomForest")
-library("e1071")
-library("pROC")
-library("ROSE")
+pacman::p_load(tidyverse, readxl, caret, randomForest, e1071, pROC, ROSE, Metrics)
+
 #Data import
 data <- read_excel("Health Literacy Transformed Data.xlsx", 
            sheet = "Transformed")
@@ -122,7 +116,7 @@ test <- trainsali[-sample,]
 # EDA
 From the bar plots, we observed that this data is imbalanced in terms of Race, Gender, AJCC stage, and Insurance type, etc. 
 
-Besides this, it’s notable that there are only 197 observations in class 0 while 2108 observations in class 1, so we also have extremely imbalanced classes in our outcome. (plots)
+Besides this, it’s notable that there are only 197 observations in class 0 (the treatment did not follow the guideline) while 2108 observations in class 1 (the treatment followed the guideline), so we also have extremely imbalanced classes in our outcome. (plots)
 
 From the correlation matrix, we also noticed that, variables like education, including 9th grade,
 High school and bachelor are highly correlated. So we exclude them from modeling.
@@ -259,7 +253,6 @@ For the random forest model with the stratified sampling method, the result is v
 From what we got from the results, since there was no obvious difference in the prediction, we cannot conclude the existence of bias in either race or gender. 
 
 ```{r}
-library(Metrics)
 #Results
 rf1_2 <- randomForest(follow ~  Year_of_Diagnosis + Median_Household_Income + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry=mtry_best, ntree=ntree_best)
 
@@ -297,3 +290,9 @@ Because we do not have information like TNM stage, so we cannot match treatment 
 We do our best to fit a model performing well on both class 1 and class 0, as you can see the model is not perfect due to the limitation of data imbalance. This is a question that often can be seen in machine learning since in the real world those imbalance things always happen. Our model here is only a reference to give a sense of what and how this bias will happen, and due to the accuracy of the model, we cannot assert that it must or it must not have bias.
 
 # Appendix
+We found some methods on [this website](https://machinelearningmastery.com/bagging-and-random-forest-for-imbalanced-classification/), and the Jupyter notebook .ipynb file is uploaded in the Appendix folder on our github. The performance of these models are close to our random forest model. 
+
+# Citation
+```{r}
+lapply(X=names(sessionInfo()$otherPkgs), FUN=citation)
+```
