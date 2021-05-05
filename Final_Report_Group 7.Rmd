@@ -14,6 +14,7 @@ library("purrr")
 library("randomForest")
 library("e1071")
 library("pROC")
+library("ROSE")
 #Data import
 data <- read_excel("Health Literacy Transformed Data.xlsx", 
            sheet = "Transformed")
@@ -147,8 +148,8 @@ for(i in 1:nrow(tune_grid)){
   pred_tune <- predict(rf_tune, test, type = "class")
   auc_tune[i] <- roc.curve(test$follow, factor(pred_tune))$auc
 }
-mtry_best <- tune_grid[which.min(auc_tune),]$mtry
-ntree_best <- tune_grid[which.min(auc_tune),]$ntree
+mtry_best <- tune_grid[which.max(auc_tune),]$mtry
+ntree_best <- tune_grid[which.max(auc_tune),]$ntree
 ```
 
 ```{r rf1}
@@ -161,18 +162,19 @@ roc.curve(test$follow, factor(pred_forest))
 
 ```{r tune_rf2, fig.show='hide'}  
 # create tune grid for random forest with stratified sampling
-sampsize <- round(nrow(train)*c(0.7, 0.8, 0.9))
-tune2_grid <- expand.grid(mtry=mtry, ntree=ntree, sampsize=sampsize)
+sampsize_0 <- seq(30,90,20)
+sampsize_1 <- seq(30,90,20)
+tune2_grid <- expand.grid(mtry=mtry, ntree=ntree, sampsize_0=sampsize_0, sampsize_1=sampsize_1)
 auc2_tune <- c()
 
 for(i in 1:nrow(tune_grid)){
-  rf2_tune <- randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry = tune_grid$mtry[i], ntree = tune_grid$ntree[i], sampsize = tune_grid$sampsize[i], strata = train$follow)
+  rf2_tune <- randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry = tune_grid$mtry[i], ntree = tune_grid$ntree[i], sampsize = c(sampsize_0[i], tune_grid$sampsize_1[i]), strata = train$follow)
   pred2_tune <- predict(rf2_tune, test, type = "class")
   auc2_tune[i] <- roc.curve(test$follow, factor(pred2_tune))$auc
 }
-mtry2_best <- tune_grid[which.min(auc2_tune),]$mtry
-ntree2_best <- tune_grid[which.min(auc2_tune),]$ntree
-sampsize2_best <- tune_grid[which.min(auc2_tune),]$sampsize
+mtry2_best <- tune_grid[which.max(auc2_tune),]$mtry
+ntree2_best <- tune_grid[which.max(auc2_tune),]$ntree
+sampsize2_best <- tune_grid[which.max(auc2_tune),]$sampsize
 ```
 
 ```{r rf2}
