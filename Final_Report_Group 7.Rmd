@@ -135,18 +135,44 @@ We first fitted a normal randomForest model.
 Next, to deal with the imbalanced classes problem, we tried the stratified sampling method in randomForest with different ratios of class0 vs. class1, such as 1:100, 1:10, and 1:1, and it turns out that the model performance is the best with ratio 1:1.
 
 ```{r}
-#tune: mtry, ntree, sampsize
+# tune: mtry, ntree, sampsize
+# create tune grid
+mtry <- seq(2, 7, 1)
+ntree <- seq(500, 3000, 500)
+sampsize <- round(nrow(train)*c(0.7, 0.8, 0.9))
+tune_grid <- expand.grid(mtry=mtry, ntree=ntree, sampsize=sampsize)
+auc_tune <- c()
+# tune mtry, ntree
+for(i in 1:nrow(tune_grid)){
+  rf_tune <- randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry = tune_grid$mtry[i], ntree = tune_grid$ntree[i])
+  pred_tune <- predict(rf_tune, test, type = "class")
+  auc_tune[i] <- roc.curve(test$follow, factor(pred_tune))$auc
+}
+# tune_grid[which.min(auc_tune),]
+mtry_best <- tune_grid[which.min(auc_tune),]$mtry
+ntree_best <- tune_grid[which.min(auc_tune),]$ntree
 
-rf = randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, ntree=1000)
+# Fit random forest
+rf = randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry=mtry_best, ntree=ntree_best)
 pred_forest = predict(rf, test, type = "class")
 confusionMatrix(pred_forest, test$follow)
 roc.curve(test$follow, factor(pred_forest))
 
-
+# tune mtry, ntree, sampsize
+auc2_tune <- c()
+for(i in 1:nrow(tune_grid)){
+  rf2_tune <- randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry = tune_grid$mtry[i], ntree = tune_grid$ntree[i], sampsize = tune_grid$sampsize[i])
+  pred2_tune <- predict(rf2_tune, test, type = "class")
+  auc2_tune[i] <- roc.curve(test$follow, factor(pred2_tune))$auc
+}
+# tune_grid[which.min(auc_tune),]
+mtry2_best <- tune_grid[which.min(auc2_tune),]$mtry
+ntree2_best <- tune_grid[which.min(auc2_tune),]$ntree
+sampsize2_best <- tune_grid[which.min(auc2_tune),]$sampsize
 
 # random forest with stratified sampling
 rf2 = randomForest(follow ~ Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes + Subsite2 + AJCC_7_Stage + Sex + Race,
-                   data = train, ntree=1000, sampsize=c(85,85),strata=train$follow)
+                   data = train, mtry = mtry2_best, ntree = ntree2_best, sampsize = sampsize2_best,strata = train$follow)
 pred_forest2 = predict(rf2, test, type = "class")
 confusionMatrix(pred_forest2, test$follow)
 roc.curve(test$follow, factor(pred_forest2))
