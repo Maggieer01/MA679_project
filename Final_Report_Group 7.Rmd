@@ -168,7 +168,7 @@ tune2_grid <- expand.grid(mtry=mtry, ntree=ntree, sampsize_0=sampsize_0, sampsiz
 auc2_tune <- c()
 
 for(i in 1:nrow(tune_grid)){
-  rf2_tune <- randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry = tune_grid$mtry[i], ntree = tune_grid$ntree[i], sampsize = c(sampsize_0[i], tune_grid$sampsize_1[i]), strata = train$follow)
+  rf2_tune <- randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry = tune2_grid$mtry[i], ntree = tune2_grid$ntree[i], sampsize = c(tune2_grid$sampsize_0[i], tune2_grid$sampsize_1[i]), strata = train$follow)
   pred2_tune <- predict(rf2_tune, test, type = "class")
   auc2_tune[i] <- roc.curve(test$follow, factor(pred2_tune))$auc
 }
