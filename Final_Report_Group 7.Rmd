@@ -121,12 +121,29 @@ test <- trainsali[-sample,]
 ```
 
 # EDA
-From the bar plots, we observed that this is an imbalanced dataset in terms of Race, Gender, SEER_Registry, and Insurance type. (plots)
+From the bar plots, we observed that this is an imbalanced dataset in terms of Race, Gender, SEER_Registry, and Insurance type.
+```{r}
+##race
+ggplot(data=sali)+geom_histogram(mapping=aes(x=Race,fill=as.factor(follow)),stat='count',position = 'dodge') + theme(axis.text.x = element_text( size = 11, angle = 15))
 
-Besides this, it’s notable that there are only 197 observations in class 0 while 2108 observations in class 1, so we also have extremely imbalanced classes in our outcome. (plots)
+##sex
+ggplot(data=sali)+geom_bar(mapping=aes(x=Sex,fill=as.factor(follow)),stat='count',position = 'dodge')+ theme(axis.text.x = element_text( size = 11, angle = 15))
+```
+
+
+Besides this, it’s notable that there are only 197 observations in class 0 while 2108 observations in class 1, so we also have extremely imbalanced classes in our outcome. 
+```{r}
+summary(as.factor(sali$follow))
+```
+
 
 From the correlation matrix, we also noticed that, variables like education, including 9th grade,
-High school and bachelor are highly correlated. So we exclude them from modeling.
+High school and bachelor are highly correlated. This correlation should caused by the fact that these varibles overlape with eachother. So we also exclude them from modeling.
+```{r}
+library("PerformanceAnalytics")
+data_num <- select_if(sali, is.numeric)  
+chart.Correlation(data_num, histogram=TRUE, pch=19)
+```
 
 
 
