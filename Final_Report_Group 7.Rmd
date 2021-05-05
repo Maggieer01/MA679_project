@@ -24,7 +24,7 @@ guide <- read_excel("NCCN Guidelines.xlsx")
 
 # Introduction
 
-After having some initial exploration of SEER data, we decided to see whether there is a bias between the doctor's decision and the treatment guideline. The treatment guideline is based on the TNM cancer stage, we only have information about the AJCC cancer stage, which means we cannot match all cancer types with their guidelines. Therefore, we only chose cancer on Salivary Gland to do further exploration since its treatment matches well with the data. 
+After having some initial exploration of SEER data, we decided to see whether there is a bias between the doctor's decision and the treatment guideline in terms of each observation's race and gender. The treatment guideline is based on the TNM cancer stage, we only have information about the AJCC cancer stage, which means we cannot match all cancer types with their guidelines. Therefore, we only chose cancer on Salivary Gland to do further exploration since its treatment matches well with the data. 
 
 
 # Data Processing
