@@ -121,6 +121,11 @@ When we look at some initial plots, we observed that this data is imbalanced in 
 
 From the correlation matrix, we also noticed that, variables like education, including 9th grade,
 High school and bachelor are highly correlated. So we exclude them from modeling.
+```{r, warning=FALSE,fig.width=6,fig.height=3,fig.cap="Correlation Matrix",fig.align='center'}
+sali_num <- select_if(sali, is.numeric)  
+library("PerformanceAnalytics")
+chart.Correlation(sali_num, histogram=TRUE, pch=19)
+```
 
 ```{r, warning=FALSE,fig.width=4,fig.height=3.5,fig.cap="There are only 197 negative response but 2108 positive response."}
 ##over all
