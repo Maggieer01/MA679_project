@@ -162,25 +162,26 @@ roc.curve(test$follow, factor(pred_forest))
 
 ```{r tune_rf2, fig.show='hide'}  
 # create tune grid for random forest with stratified sampling
-sampsize_0 <- seq(30,90,20)
-sampsize_1 <- seq(30,90,20)
+sampsize_0 <- seq(50,90,10)
+sampsize_1 <- seq(50,90,10)
 tune2_grid <- expand.grid(mtry=mtry, ntree=ntree, sampsize_0=sampsize_0, sampsize_1=sampsize_1)
 auc2_tune <- c()
 
-for(i in 1:nrow(tune_grid)){
+for(i in 1:nrow(tune2_grid)){
   rf2_tune <- randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry = tune2_grid$mtry[i], ntree = tune2_grid$ntree[i], sampsize = c(tune2_grid$sampsize_0[i], tune2_grid$sampsize_1[i]), strata = train$follow)
   pred2_tune <- predict(rf2_tune, test, type = "class")
   auc2_tune[i] <- roc.curve(test$follow, factor(pred2_tune))$auc
 }
 mtry2_best <- tune_grid[which.max(auc2_tune),]$mtry
 ntree2_best <- tune_grid[which.max(auc2_tune),]$ntree
-sampsize2_best <- tune_grid[which.max(auc2_tune),]$sampsize
+sampsize0_best <- tune_grid[which.max(auc2_tune),]$sampsize_0
+sampsize1_best <- tune_grid[which.max(auc2_tune),]$sampsize_1
 ```
 
 ```{r rf2}
 # random forest with stratified sampling
 rf2 = randomForest(follow ~ Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Lymph_Nodes + Subsite2 + AJCC_7_Stage + Sex + Race,
-                   data = train, mtry = mtry2_best, ntree = ntree2_best, sampsize = sampsize2_best,strata = train$follow)
+                   data = train, mtry = mtry2_best, ntree = ntree2_best, sampsize = c(sampsize0_best, sampsize1_best),strata = train$follow)
 pred_forest2 = predict(rf2, test, type = "class")
 confusionMatrix(pred_forest2, test$follow)
 roc.curve(test$follow, factor(pred_forest2))
