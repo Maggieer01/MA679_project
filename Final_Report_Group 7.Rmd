@@ -3,6 +3,7 @@ title: "MA 679 Final Report"
 author: "Group 7"
 date: "2021/5/4"
 output: pdf_document
+urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
@@ -328,7 +329,7 @@ ggplot(data=sali)+geom_histogram(mapping=aes(x=Lymph_Nodes,fill=as.factor(follow
 ```
 
 
-We found some methods on [this website](https://machinelearningmastery.com/bagging-and-random-forest-for-imbalanced-classification/), and the Jupyter notebook .ipynb file is uploaded in the Appendix folder on our github. The performance of these models are close to our random forest model. 
+We found some methods on [this website](https://machinelearningmastery.com/bagging-and-random-forest-for-imbalanced-classification/), and the Jupyter notebook .ipynb file is uploaded to [the Appendix folder in our GitHub repository](https://github.com/Maggieer01/MA679_project/tree/main/Appendix). The performance of these models is close to our random forest model. 
 
 # Citation
 ```{r}
