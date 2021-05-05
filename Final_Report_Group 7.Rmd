@@ -3,7 +3,6 @@ title: "MA 679 Final Report"
 author: "Group 7"
 date: "2021/5/4"
 output: pdf_document
-urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +13,7 @@ pacman::p_load(tidyverse, readxl, caret, randomForest, e1071, pROC, ROSE, Metric
 data <- read_excel("Health Literacy Transformed Data.xlsx", 
            sheet = "Transformed")
 
-guide <- read_excel("NCCN Guidelines.xlsx")
+#guide <- read_excel("NCCN Guidelines.xlsx")
 ```
 
 # Introduction
@@ -27,6 +26,7 @@ After having some initial exploration of SEER data, we decided to see whether th
 In the data processing step, we first selected all the Salivary Gland Cancer. In the 'NCCN Guidelines' file, there is no treatment guideline information for stage 'IVC' and 'IVNOS' of cancer Salivary Gland. We removed observations of the 'IVNOS' stage since there are only 6 observations and this amount is trivial compared with the whole dataset. As for the 'IVC' stage, according to the information provided in 'head-and-neck.pdf' page 87, there is no preferred treatment, and the treatment should be individualized based on patient characteristics. Thus, we removed all observations of the 'IVC' stage because we could not decide whether the given therapy follows the guideline or not. Other than these two stages, based on the `NCCN Guidelines`, we found that only stage 'IVB' has a different preferred number one therapy from others, its therapy1 is Radiation while other stages are recommended to have Surgery. Depending on this information, we create a binary column to indicate whether each individual is given treatment following the guideline or not, in this case, '0' means the treatment does not follow the guideline, '1' means the treatment follows the guideline. Meanwhile, we replace all the blank space and symbols in column names for convenience.
 
 Also, we created some new variables based on the EDA:
+
 1. Insurance2: This is a categorical variable with levels 0,1,2. We find that people in the "Insured" class have the lowest rate of being given treatment not following the guideline, while people in the "Uninsured" class have the highest rate of that. "1" indicates the "Insured" class, "2" indicates the "Uninsured" class, and "0" indicates all others.
 
 2. Subsites2: This is a categorical variable with two levels 0 and 1. We find that in the subsite class "C08.1-Sublingual gland", all the observations are given treatment following the guideline. "1" indicates an individual is in this class, "0" indicates all others. 
@@ -115,39 +115,54 @@ test <- trainsali[-sample,]
 ```
 
 # EDA
-From the bar plots, we observed that this data is imbalanced in terms of Race, Gender, AJCC stage, and Insurance type, etc. 
 
-Besides this, it’s notable that there are only 197 observations in class 0 (the treatment did not follow the guideline) while 2108 observations in class 1 (the treatment followed the guideline), so we also have extremely imbalanced classes in our outcome. (plots)
+When we look at some initial plots, we observed that this data is imbalanced in terms of Race, Gender, AJCC stage, and Insurance type, etc. 
 
 From the correlation matrix, we also noticed that, variables like education, including 9th grade,
 High school and bachelor are highly correlated. So we exclude them from modeling.
 
-Other plots from our EDA are in the Appendix section.
-
-
-```{r, warning=FALSE}
+```{r, warning=FALSE,fig.width=4,fig.height=3.5,fig.cap="There are only 197 negative response but 2108 positive response."}
 ##over all
-ggplot(data=sali)+
-  geom_bar(mapping = aes(as.factor(follow)))+
-  xlab("Follow guideline or not")
+ggplot(data=sali,mapping = aes(x=as.factor(follow)))+
+  geom_bar(stat="count")+
+  geom_text(stat="count",aes(label=..count..), color="black", size=3.5,position=position_dodge(0.5),vjust=-0.3)+
+  labs(title="Count of observations",x="Follow guideline or not")
+```
 
+From the bar plots, it’s notable that there are only 197 observations in class 0 (the treatment did not follow the guideline) while 2108 observations in class 1 (the treatment followed the guideline), so we also have extremely imbalanced classes in our outcome.
+
+```{r, warning=FALSE,fig.width=7,fig.height=2.5,fig.cap="barplot of race and follow guidelines or not"}
 ##race
 ggplot(data=sali)+geom_histogram(mapping=aes(x=Race,fill=as.factor(follow)),stat='count',position = 'dodge')+
   coord_flip()+
-  scale_fill_discrete(name = "Follow guideline or not")
+  scale_fill_discrete(name = "Follow guideline or not")+
+  labs(title="Count of observations based on race")
+```
 
+From Figure 2 we can see that Majority race are white, and all American Indian/Alaska Native follow the guidelines.
+
+```{r, warning=FALSE,fig.width=6,fig.height=3,fig.cap="barplot of gender and follow guidelines or not",fig.align='center'}
 ##sex
 ggplot(data=sali)+
   geom_bar(mapping=aes(x=Sex,fill=as.factor(follow)),stat='count',position = 'dodge')+
-  scale_fill_discrete(name = "Follow guideline or not")
+  scale_fill_discrete(name = "Follow guideline or not")+
+  labs(title="Count of observations based on sex")
+```
 
+Figure 3 shows that there are no big difference between male and female.
+
+```{r, warning=FALSE,fig.width=6,fig.height=3,fig.cap="barplot of AJCC Stage and follow guidelines or not",fig.align='center'}
 ##AJCC cancer stage
 ggplot(data=sali)+
   geom_histogram(mapping=aes(x=AJCC_7_Stage,fill=as.factor(follow)),stat='count',position = 'dodge')+
-  scale_fill_discrete(name = "Follow guideline or not")
-
-
+  scale_fill_discrete(name = "Follow guideline or not")+
+  labs(title="Count of observations based on cancer stage")
 ```
+
+In Figure 4, it is unusual that all patients at IVB stage did not follow guidelines.
+
+
+Other plots from our EDA are in the Appendix section.
 
 # Modeling
 
@@ -198,6 +213,9 @@ ntree_best = 600
 rf = randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Median_Household_Income + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry=mtry_best, ntree=ntree_best)
 pred_forest = predict(rf, test, type = "class")
 table(pred_forest, test$follow)
+```
+
+```{r, warning=FALSE,fig.width=5,fig.height=4,fig.cap="ROC cureve without using stratified"}
 rf_roc <- roc(test$follow,as.numeric(pred_forest))
 plot(rf_roc, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='random forest ROC curve')
 ```
@@ -233,13 +251,13 @@ sampsize1_best = 90
 rf2 = randomForest(follow ~ Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Median_Household_Income + Lymph_Nodes + Subsite2 + AJCC_7_Stage + Sex + Race, data = train, mtry = mtry2_best, ntree = ntree2_best, sampsize = c(sampsize0_best, sampsize1_best),strata = train$follow)
 pred_forest2 = predict(rf2, test, type = "class")
 table(pred_forest2, test$follow)
+```
+```{r, warning=FALSE,fig.width=5,fig.height=4,fig.cap="ROC cureve using stratified"}
 rf_roc <- roc(test$follow,as.numeric(pred_forest2))
 plot(rf_roc, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='random forest with stratified sampling ROC curve')
 ```
 
-
-
-```{r}
+```{r, warning=FALSE,fig.width=6,fig.height=4,fig.cap="This plot shows the importance of each variabels, and AJCC_7_Stage plays an significant role."}
 varImpPlot(rf,type=2)
 ```
 
@@ -253,7 +271,7 @@ For the random forest model with the stratified sampling method, the result is v
 
 From what we got from the results, since there was no obvious difference in the prediction, we cannot conclude the existence of bias in either race or gender. 
 
-```{r}
+```{r, warning=FALSE,fig.width=6,fig.height=4}
 #Results
 rf1_2 <- randomForest(follow ~  Year_of_Diagnosis + Median_Household_Income + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry=mtry_best, ntree=ntree_best)
 
@@ -291,9 +309,28 @@ Because we do not have information like TNM stage, so we cannot match treatment 
 We do our best to fit a model performing well on both class 1 and class 0, as you can see the model is not perfect due to the limitation of data imbalance. This is a question that often can be seen in machine learning since in the real world those imbalance things always happen. Our model here is only a reference to give a sense of what and how this bias will happen, and due to the accuracy of the model, we cannot assert that it must or it must not have bias.
 
 # Appendix
-We found some methods on [this website](https://machinelearningmastery.com/bagging-and-random-forest-for-imbalanced-classification/), and the Jupyter notebook .ipynb file is uploaded in the Appendix folder on [our Github](https://github.com/Maggieer01/MA679_project/tree/main/Appendix). The performance of these models is close to our random forest model. 
+
+## more EDA
+
+```{r, fig.height=4, fig.width=6}
+##age at diagnosis
+ggplot(data=sali)+geom_density(mapping=aes(x=Age_at_Diagnosis,fill=as.factor(follow),color=as.factor(follow)),alpha = 0.5,size=1,linetype="solid")
+##year of diagnosis
+ggplot(data=sali)+geom_histogram(mapping=aes(x=Year_of_Diagnosis,fill=as.factor(follow),color=as.factor(follow)),stat='count',position = 'dodge')
+##Pct_Language_isolation_ACS_2013_2017_households
+ggplot(data=sali)+geom_density(mapping=aes(x=Pct_Language_isolation_ACS_2013_2017_households,fill=as.factor(follow),color=as.factor(follow)),alpha = 0.5,size=1,linetype="solid")
+## Median_Household_Income
+ggplot(data=sali)+geom_density(mapping=aes(x=Median_Household_Income,fill=as.factor(follow),color=as.factor(follow)),alpha = 0.5,size=1,linetype="solid")
+##subsite2
+ggplot(data=sali)+geom_histogram(mapping=aes(x=Subsite2,fill=as.factor(follow),color=as.factor(follow)),stat='count',position = 'dodge')
+##Lymph_Nodes
+ggplot(data=sali)+geom_histogram(mapping=aes(x=Lymph_Nodes,fill=as.factor(follow),color=as.factor(follow)),stat='count',position = 'dodge')
+```
+
+
+We found some methods on [this website](https://machinelearningmastery.com/bagging-and-random-forest-for-imbalanced-classification/), and the Jupyter notebook .ipynb file is uploaded in the Appendix folder on our github. The performance of these models are close to our random forest model. 
 
 # Citation
 ```{r}
-lapply(X=names(sessionInfo()$otherPkgs), FUN=citation)
+#lapply(X=names(sessionInfo()$otherPkgs), FUN=citation)
 ```
