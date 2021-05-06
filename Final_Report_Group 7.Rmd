@@ -7,8 +7,8 @@ urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
-pacman::p_load(tidyverse, readxl, caret, randomForest, e1071, pROC, ROSE, Metrics)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+pacman::p_load(tidyverse, readxl, caret, randomForest, e1071, pROC, ROSE, Metrics, PerformanceAnalytics, kableExtra)
 
 #Data import
 data <- read_excel("Health Literacy Transformed Data.xlsx", 
@@ -24,7 +24,7 @@ After having some initial exploration of SEER data, we decided to see whether th
 
 # Data Processing
 
-In the data processing step, we first selected all the Salivary Gland Cancer. In the 'NCCN Guidelines' file, there is no treatment guideline information for stage 'IVC' and 'IVNOS' of cancer Salivary Gland. We removed observations of the 'IVNOS' stage since there are only 6 observations and this amount is trivial compared with the whole dataset. As for the 'IVC' stage, according to the information provided in 'head-and-neck.pdf' page 87, there is no preferred treatment, and the treatment should be individualized based on patient characteristics. Thus, we removed all observations of the 'IVC' stage because we could not decide whether the given therapy follows the guideline or not. Other than these two stages, based on the `NCCN Guidelines`, we found that only stage 'IVB' has a different preferred number one therapy from others, its therapy1 is Radiation while other stages are recommended to have Surgery. Depending on this information, we create a binary column to indicate whether each individual is given treatment following the guideline or not, in this case, '0' means the treatment does not follow the guideline, '1' means the treatment follows the guideline. Meanwhile, we replace all the blank space and symbols in column names for convenience.
+In the data processing step, we first selected all the Salivary Gland Cancer. In the NCCN Guidelines file, there is no treatment guideline information for stage IVC and IVNOS" of cancer Salivary Gland. We removed observations of the IVNOS stage since there are only 6 observations and this amount is trivial compared with the whole dataset. As for the IVC stage, according to the information provided in "head-and-neck.pdf" page 87, there is no preferred treatment, and the treatment should be individualized based on patient characteristics. Thus, we removed all observations of the IVC stage because we could not decide whether the given therapy follows the guideline or not. Other than these two stages, based on the `NCCN Guidelines`, we found that only stage IVB has a different preferred number one therapy from others, its therapy1 is Radiation while other stages are recommended to have Surgery. Depending on this information, we create a binary column to indicate whether each individual is given treatment following the guideline or not, in this case, "0" means the treatment does not follow the guideline, "1" means the treatment follows the guideline. Meanwhile, we replace all the blank space and symbols in column names for convenience.
 
 Also, we created some new variables based on the EDA:
 
@@ -121,13 +121,12 @@ When we look at some initial plots, we observed that this data is imbalanced in 
 
 From the correlation matrix, we also noticed that, variables like education, including 9th grade,
 High school and bachelor are highly correlated. So we exclude them from modeling.
-```{r, warning=FALSE,fig.width=6,fig.height=3,fig.cap="Correlation Matrix",fig.align='center'}
+```{r, fig.width=6,fig.height=3,fig.cap="Correlation Matrix",fig.align='center'}
 sali_num <- select_if(sali, is.numeric)  
-library("PerformanceAnalytics")
 chart.Correlation(sali_num, histogram=TRUE, pch=19)
 ```
 
-```{r, warning=FALSE,fig.width=4,fig.height=3.5,fig.cap="There are only 197 negative response but 2108 positive response."}
+```{r, fig.width=4,fig.height=3.5,fig.cap="There are only 197 negative response but 2108 positive response."}
 ##over all
 ggplot(data=sali,mapping = aes(x=as.factor(follow)))+
   geom_bar(stat="count")+
@@ -137,7 +136,7 @@ ggplot(data=sali,mapping = aes(x=as.factor(follow)))+
 
 From the bar plots, it’s notable that there are only 197 observations in class 0 (the treatment did not follow the guideline) while 2108 observations in class 1 (the treatment followed the guideline), so we also have extremely imbalanced classes in our outcome.
 
-```{r, warning=FALSE,fig.width=7,fig.height=2.5,fig.cap="barplot of race and follow guidelines or not"}
+```{r, fig.width=7,fig.height=2.5,fig.cap="barplot of race and follow guidelines or not"}
 ##race
 ggplot(data=sali)+geom_histogram(mapping=aes(x=Race,fill=as.factor(follow)),stat='count',position = 'dodge')+
   coord_flip()+
@@ -147,7 +146,7 @@ ggplot(data=sali)+geom_histogram(mapping=aes(x=Race,fill=as.factor(follow)),stat
 
 From Figure 2 we can see that Majority race are white, and all American Indian/Alaska Native follow the guidelines.
 
-```{r, warning=FALSE,fig.width=6,fig.height=3,fig.cap="barplot of gender and follow guidelines or not",fig.align='center'}
+```{r, fig.width=6,fig.height=3,fig.cap="barplot of gender and follow guidelines or not",fig.align='center'}
 ##sex
 ggplot(data=sali)+
   geom_bar(mapping=aes(x=Sex,fill=as.factor(follow)),stat='count',position = 'dodge')+
@@ -155,9 +154,9 @@ ggplot(data=sali)+
   labs(title="Count of observations based on sex")
 ```
 
-Figure 3 shows that there are no big difference between male and female.
+Figure 3 shows that there is no big difference between males and females.
 
-```{r, warning=FALSE,fig.width=6,fig.height=3,fig.cap="barplot of AJCC Stage and follow guidelines or not",fig.align='center'}
+```{r, fig.width=6,fig.height=3,fig.cap="barplot of AJCC Stage and follow guidelines or not",fig.align='center'}
 ##AJCC cancer stage
 ggplot(data=sali)+
   geom_histogram(mapping=aes(x=AJCC_7_Stage,fill=as.factor(follow)),stat='count',position = 'dodge')+
@@ -165,7 +164,7 @@ ggplot(data=sali)+
   labs(title="Count of observations based on cancer stage")
 ```
 
-In Figure 4, it is unusual that all patients at IVB stage did not follow guidelines.
+In Figure 4, it is unusual that all patients at the IVB stage did not follow guidelines.
 
 
 Other plots from our EDA are in the Appendix section.
@@ -218,10 +217,11 @@ ntree_best = 600
 # Fit random forest
 rf = randomForest(follow ~  Sex + Race + Year_of_Diagnosis + Median_Household_Income + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry=mtry_best, ntree=ntree_best)
 pred_forest = predict(rf, test, type = "class")
-table(pred_forest, test$follow)
+kable(table(pred_forest, test$follow), caption="Confusion Matrix for Random Forest") %>%
+  kable_styling(position = "center")
 ```
 
-```{r, warning=FALSE,fig.width=5,fig.height=4,fig.cap="ROC cureve without using stratified"}
+```{r, fig.width=5,fig.height=4,fig.cap="ROC cureve without using stratified"}
 rf_roc <- roc(test$follow,as.numeric(pred_forest))
 plot(rf_roc, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='random forest ROC curve')
 ```
@@ -256,14 +256,16 @@ sampsize1_best = 90
 # random forest with stratified sampling
 rf2 = randomForest(follow ~ Year_of_Diagnosis + Age_at_Diagnosis + Insurance2 + Median_Household_Income + Lymph_Nodes + Subsite2 + AJCC_7_Stage + Sex + Race, data = train, mtry = mtry2_best, ntree = ntree2_best, sampsize = c(sampsize0_best, sampsize1_best),strata = train$follow)
 pred_forest2 = predict(rf2, test, type = "class")
-table(pred_forest2, test$follow)
-```
-```{r, warning=FALSE,fig.width=5,fig.height=4,fig.cap="ROC cureve using stratified"}
-rf_roc <- roc(test$follow,as.numeric(pred_forest2))
-plot(rf_roc, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='random forest with stratified sampling ROC curve')
+kable(table(pred_forest2, test$follow), caption="Confusion Matrix for Stratified Random Forest") %>%
+  kable_styling(position = "center")
 ```
 
-```{r, warning=FALSE,fig.width=6,fig.height=4,fig.cap="This plot shows the importance of each variabels, and AJCC_7_Stage plays an significant role."}
+```{r, fig.width=5,fig.height=4,fig.cap="ROC cureve using stratified"}
+rf_roc <- roc(test$follow,as.numeric(pred_forest2))
+plot(rf_roc, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='Random Forest with stratified sampling ROC curve')
+```
+
+```{r, fig.width=6,fig.height=4,fig.cap="This plot shows the importance of each variabels, and AJCC_7_Stage plays an significant role."}
 varImpPlot(rf,type=2)
 ```
 
@@ -273,11 +275,11 @@ To see if there is bias, we compared two models where one of them contains Race 
 
 For the random forest model without stratified sampling method, we found the model without Race and Gender as predictors had a slightly worse prediction, to be specific, this exclusion resulted in the model misclassified about 4 more observations in class1 to class0, and this causes the AUC fluctuated around 0.3% - 0.5%. 
 
-For the random forest model with the stratified sampling method, the result is very similar. The model without Race and Gender as predictors misclassified 9 more observations in class1 to class0 compared with the model with Race and Gender, and its AUC fluctuated around 0.2% .
+For the random forest model with the stratified sampling method, the result is very similar. The model without Race and Gender as predictors misclassified 9 more observations in class1 to class0 compared with the model with Race and Gender, and its AUC fluctuated around 0.2%.
 
 From what we got from the results, since there was no obvious difference in the prediction, we cannot conclude the existence of bias in either race or gender. 
 
-```{r, warning=FALSE,fig.width=6,fig.height=4}
+```{r, fig.width=6,fig.height=4}
 #Results
 rf1_2 <- randomForest(follow ~  Year_of_Diagnosis + Median_Household_Income + Age_at_Diagnosis + Insurance2 + Lymph_Nodes+ Subsite2 + AJCC_7_Stage, data = train, mtry=mtry_best, ntree=ntree_best)
 
@@ -289,23 +291,31 @@ rf2_2 <- randomForest(follow ~ Year_of_Diagnosis + Age_at_Diagnosis + Insurance2
 pred_forest2_2 <- predict(rf2_2,test)
 
 
-table(pred_forest, test$follow)
-table(pred_forest1_2, test$follow)
+kable(table(pred_forest, test$follow), caption="Confusion Matrix for Random Forest") %>%
+  kable_styling(position = "center")
+kable(table(pred_forest1_2, test$follow), caption="Confusion Matrix for Random Forest without Race and Gender") %>%
+  kable_styling(position = "center")
 rf_roc1 <- roc(test$follow,as.numeric(pred_forest))
-plot(rf_roc1, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='random forest ROC curve')
+plot(rf_roc1, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='Random Forest ROC curve')
+```
 
+```{r, fig.width=6,fig.height=4}
 rf_roc2 <- roc(test$follow,as.numeric(pred_forest1_2))
-plot(rf_roc2, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='random forest without Race, Gender ROC curve ')
+plot(rf_roc2, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='Random Forest without Race, Gender ROC curve ')
+```
 
-
-
-table(pred_forest2, test$follow)
-table(pred_forest2_2, test$follow)
+```{r, fig.width=6,fig.height=4}
+kable(table(pred_forest2, test$follow), caption="Confusion Matrix for Stratified Random Forest") %>%
+  kable_styling(position = "center")
+kable(table(pred_forest2_2, test$follow), caption="Confusion Matrix for Stratified Random Forest without Race and Gender") %>%
+  kable_styling(position = "center")
 rf_roc3 <- roc(test$follow,as.numeric(pred_forest2))
-plot(rf_roc3, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='random forest with stratified sampling ROC curve')
+plot(rf_roc3, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='Stratified Random Forest ROC curve')
+```
 
+```{r, fig.width=6,fig.height=4}
 rf_roc4 <- roc(test$follow,as.numeric(pred_forest2_2))
-plot(rf_roc4, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='random forest with stratified sampling, without Race, Gender ROC curve')
+plot(rf_roc4, print.auc=TRUE, auc.polygon=TRUE, grid=c(0.1, 0.2),grid.col=c("green", "red"), max.auc.polygon=TRUE,auc.polygon.col="skyblue", print.thres=TRUE,main='Stratified Random Forest without Race, Gender ROC curve')
 ```
 
 # Discussion
@@ -318,7 +328,7 @@ We do our best to fit a model performing well on both class 1 and class 0, as yo
 
 ## more EDA
 
-```{r, fig.height=4, fig.width=6}
+```{r}
 ##age at diagnosis
 ggplot(data=sali)+geom_density(mapping=aes(x=Age_at_Diagnosis,fill=as.factor(follow),color=as.factor(follow)),alpha = 0.5,size=1,linetype="solid")
 ##year of diagnosis
@@ -333,10 +343,10 @@ ggplot(data=sali)+geom_histogram(mapping=aes(x=Subsite2,fill=as.factor(follow),c
 ggplot(data=sali)+geom_histogram(mapping=aes(x=Lymph_Nodes,fill=as.factor(follow),color=as.factor(follow)),stat='count',position = 'dodge')
 ```
 
-
+## Models using Python
 We found some methods on [this website](https://machinelearningmastery.com/bagging-and-random-forest-for-imbalanced-classification/), and the Jupyter notebook .ipynb file is uploaded to [the Appendix folder in our GitHub repository](https://github.com/Maggieer01/MA679_project/tree/main/Appendix). The performance of these models is close to our random forest model. 
 
 # Citation
 ```{r}
-#lapply(X=names(sessionInfo()$otherPkgs), FUN=citation)
+lapply(X=names(sessionInfo()$otherPkgs), FUN=citation)
 ```
