@@ -17,3 +17,5 @@ Appendix:
 Python models .pdf file: https://github.com/Maggieer01/MA679_project/raw/main/Appendix/other_models_using_Python.pdf
 
 Python models .ipynb file: https://github.com/Maggieer01/MA679_project/raw/main/Appendix/other_models_using_Python.ipynb
+
+All Models: https://github.com/Maggieer01/MA679_project/blob/main/Appendix/EDA_Maggie.Rmd
