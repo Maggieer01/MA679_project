@@ -5,7 +5,7 @@ Group 7
 
 Main: 
 
-Report .pdf file: https://github.com/Maggieer01/MA679_project/raw/main/Final_Report_Group-7.pdf
+Report .pdf file (may take a few seconds to load the figures): https://github.com/Maggieer01/MA679_project/raw/main/Final_Report_Group-7.pdf
 
 Report .rmd file: https://github.com/Maggieer01/MA679_project/raw/main/Final_Report_Group%207.Rmd
 
